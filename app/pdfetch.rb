@@ -14,10 +14,11 @@
 ##    decoupled it from camping
 ##    refactored Finders to reduce replicated code
 ##    added logging
-## TODO: add unit tests
+##    added tests for finders
 ##
 ## Released under the MIT license
 ## <http://www.opensource.org/licenses/mit-license.php>
+
 require 'rubygems'
 require 'mechanize'
 require 'logger'
@@ -57,10 +58,14 @@ module Pdfetch
           begin
             p = m.get(@uri)
             @uri = p.uri
-            return false if p.uri.to_s =~ /www\.ncbi\.nlm\.nih\.gov/  # no full text link available
-          rescue Timeout::Error
-            $LOG.warn "Timed out trying to connect to #{@uri}"
+            if p.uri.to_s =~ /www\.ncbi\.nlm\.nih\.gov/  # no full text link available
+              $LOG.info "According to Pubmed no full text exists for #{id}"
+              return false
+            end
+          rescue 
+            $LOG.warn "Failed to get fulltext uri from ncbi #{@uri}"
             sleep(1)
+            return false
             # we should do a retry
           end
           finders = Pdfetch::Finders.new
@@ -77,7 +82,7 @@ module Pdfetch
                  end
                end
              rescue
-               $LOG.info "#{id} failed using #{finder.to_sym}"
+               $LOG.debug "#{id} failed using #{finder.to_sym}"
              end
           end
         end
