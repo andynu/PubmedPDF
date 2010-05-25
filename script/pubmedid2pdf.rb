@@ -6,6 +6,7 @@
 # == Required GEMS
 #     mechanize (0.9.3)
 #     socksify (1.1.0) (if you plan on using SOCKS)
+#     progressbar
 #
 # == Examples
 #     pubmedid2pdf.rb 19508715,18677110,19450510,19450585
@@ -27,29 +28,46 @@
 # == Copyright
 #   Copyright (c) 2009 Bio-geeks. Licensed under the MIT License:
 #   http://www.opensource.org/licenses/mit-license.php
-
 require 'rdoc/usage'
 require 'rubygems'
-require 'pdfetch.rb'
+require 'progressbar'
+require File.join(File.dirname(__FILE__), '..', 'app','pdfetch')
+
+$LOG.level = Logger::INFO
 
 #pmid = 19508715
 pubmeds = ARGV[0]
-
-if (pubmeds.nil?)
-  RDoc::usage() #exits app
-end
-
-pubmeds_array = pubmeds.split(",")
 server = ARGV[1]
 port = ARGV[2]
 
-fetcher = Fetch.new()
+pubmeds_array = Array.new
+# if (pubmeds.nil?)
+#   RDoc::usage() #exits app
+# end
+if (File.exists?(pubmeds))
+  pubmeds_array = IO.readlines(pubmeds).map{|l| l.chomp}
+else
+  pubmeds_array = pubmeds.split(",")
+end
+
+fetcher = Pdfetch::Fetcher.new()
+fetcher.save_dir = "pdf/"
 
 if (!server.nil? && !port.nil?)
   fetcher.useSocks(server,port)
 end
 
+pbar = ProgressBar.new("Fetching pdfs...", pubmeds_array.size)
+failures = 0
+successes = 0
 pubmeds_array.each do |p|
-  warn "Trying to fetch #{p}"   
-  fetcher.get(p)
+  pbar.inc
+  if  fetcher.get(p)
+    successes = successes +1
+  else 
+    failures = failures +1
+    $LOG.info "Failed to fetch #{p}"
+  end
 end
+pbar.finish
+puts "#{successes} successes and #{failures} failures"
