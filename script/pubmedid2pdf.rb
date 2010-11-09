@@ -26,7 +26,7 @@
 #   <http://bio-geeks.com>
 #
 # == Copyright
-#   Copyright (c) 2009 Bio-geeks. Licensed under the MIT License:
+#   Copyright (c) 2009-2010 Bio-geeks. Licensed under the MIT License:
 #   http://www.opensource.org/licenses/mit-license.php
 require 'rdoc/usage'
 require 'rubygems'
@@ -35,16 +35,15 @@ require File.join(File.dirname(__FILE__), '..', 'app','pdfetch')
 
 $LOG.level = Logger::INFO
 
-#pmid = 19508715
 pubmeds = ARGV[0]
 server = ARGV[1]
 port = ARGV[2]
 
 pubmeds_array = Array.new
-# if (pubmeds.nil?)
-#   RDoc::usage() #exits app
-# end
-if (File.exists?(pubmeds))
+if (pubmeds.nil?)
+  RDoc::usage() #exits app
+end
+if (File.exists?(pubmeds)) # read pubmed ids from file, one per line
   pubmeds_array = IO.readlines(pubmeds).map{|l| l.chomp}
 else
   pubmeds_array = pubmeds.split(",")

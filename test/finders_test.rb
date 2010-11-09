@@ -45,7 +45,7 @@ class FinderTest < Test::Unit::TestCase
     assert @fetcher.get(16988763)
   end
   
-  def test_genes_development
+  def test_citation_pdf_url
     assert @fetcher.get(20413612)
   end
   

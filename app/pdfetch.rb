@@ -34,6 +34,13 @@ module Pdfetch
   class Fetcher
     attr_accessor :save_dir
   
+    def initialize
+      @m = Mechanize.new { |a| 
+        a.keep_alive = 1
+        a.user_agent_alias = 'Mac Safari'
+      }
+    end
+    
     def useSocks(server,port)
       require 'socksify'
       TCPSocket::socks_server = server
@@ -49,23 +56,22 @@ module Pdfetch
           success = true
           $LOG.info "We already have #{id}"
         else
-          m = Mechanize.new { |a| 
-            a.keep_alive = 1
-            a.user_agent_alias = 'Mac Safari'
-          }
+          
           # set the mechanize pluggable parser for pdf files to the empty class Reprint, as a way to check for it later
-          m.pluggable_parser.pdf = Reprint
+          @m.pluggable_parser.pdf = Reprint
           begin
-            p = m.get(@uri)
+            p = @m.get(@uri)
             @uri = p.uri
             if p.uri.to_s =~ /www\.ncbi\.nlm\.nih\.gov/  # no full text link available
               $LOG.info "According to Pubmed no full text exists for #{id}"
               return false
             end
-          rescue 
-            $LOG.warn "Failed to get fulltext uri from ncbi #{@uri}"
+          rescue Timeout::Error
+            $LOG.warn "Timed out at #{@uri}"
             sleep(1)
             return false
+          rescue Mechanize::ResponseCodeError
+            $LOG.warn "Response code error for #{@uri}"
             # we should do a retry
           end
           finders = Pdfetch::Finders.new
@@ -73,7 +79,7 @@ module Pdfetch
           for finder in finders.public_methods(false).sort
              begin
                $LOG.debug "Trying #{finder.to_sym}"
-               if page = finders.send(finder.to_sym, m,p)
+               if page = finders.send(finder.to_sym, @m,p)
                  if page.kind_of? Reprint
                    page.save_as("#{@save_dir}/#{id}.pdf")
                    $LOG.info "Succesfully downloaded #{id} using #{finder.to_sym}"
@@ -169,7 +175,7 @@ module Pdfetch
         page = m.click p.links_with(:text => /pdf/i, :href => /blobtype=pdf/i)[0]
     end
     
-    def genes_development(m,p)
+    def citation_pdf_url(m,p)
       page = m.get(p.search("/html/head/meta[@name='citation_pdf_url']").first.get_attribute('content'))
     end
   
