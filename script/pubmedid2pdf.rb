@@ -4,8 +4,8 @@
 #   This program tries to download a PDF file for the given comma-separated pubmed IDs
 #
 # == Required GEMS
-#     mechanize (0.9.3)
-#     socksify (1.1.0) (if you plan on using SOCKS)
+#     mechanize (tested with 0.9.3)
+#     socksify (tested with 1.1.0) (if you plan on using SOCKS)
 #     progressbar
 #
 # == Examples
@@ -14,7 +14,7 @@
 #   Other examples:
 #    This example downloads through SOCKS, here we are using a localhost connection through port 9999
 #    Meaning that you can ssh to your some server you have access to that can access some PDFs that you cannot, f.ex. your University
-#    This is done with this command: ssh -D 9999 username@server in another terminal
+#    This is done with this co  mmand: ssh -D 9999 username@server in another terminal
 #    To use SOCKS call the program with the server and the port, in this case 127.0.0.1 and 9999
 #     pubmedid2pdf.rb 19508715 127.0.0.1 9999
 #
@@ -39,6 +39,8 @@ pubmeds = ARGV[0]
 server = ARGV[1]
 port = ARGV[2]
 
+save_dir = Dir.pwd + "/pdf/"
+
 pubmeds_array = Array.new
 if (pubmeds.nil?)
   RDoc::usage() #exits app
@@ -50,7 +52,11 @@ else
 end
 
 fetcher = Pdfetch::Fetcher.new()
-fetcher.save_dir = "pdf/"
+if (!File.directory?(save_dir))
+  Dir.mkdir(save_dir)
+  puts "Made directory for #{save_dir} for the pdfs"
+end
+fetcher.save_dir = save_dir
 
 if (!server.nil? && !port.nil?)
   fetcher.useSocks(server,port)
