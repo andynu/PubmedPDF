@@ -56,12 +56,21 @@ else
 end
 
 fetcher = Pdfetch::Fetcher.new()
+
+save_dir = Dir.pwd + "/pdf/"
+if (!File.directory?(save_dir))
+  Dir.mkdir(save_dir)
+  puts "Made directory for #{save_dir} for the pdfs"
+end
+fetcher.save_dir = save_dir
+
 server = ARGV[1]
 port = ARGV[2]
 if (!server.nil? && !port.nil?)
   fetcher.useSocks(server,port)
 end
 
+results = {}
 ids.reverse.each do |pubmedid|
   manuscript = Bio::PubMed.efetch(pubmedid)
   m = Bio::MEDLINE.new(manuscript.first)
@@ -84,14 +93,24 @@ ids.reverse.each do |pubmedid|
   year = m.year
   abstract = m.abstract
   
-  puts "#{pubmedid}|#{first_author}|#{last_author}|#{journal}|#{publication_type}|#{title}|#{affiliations}|#{doi}|#{mesh}|#{year}|#{abstract}"
+  print "#{pubmedid}|#{first_author}|#{last_author}|#{journal}|#{publication_type}|#{title}|#{affiliations}|#{doi}|#{mesh}|#{year}|"
+  #|#{abstract}"
   
-  warn "Attempting to fetch the PDF file for the following article:
-        Title: #{title}
-        First author: #{first_author}
-        Last author: #{last_author}
-        Journal: #{journal}"
+  #warn "Attempting to fetch the PDF file for the following article:
+  #      Title: #{title}
+  #      First author: #{first_author}
+  #      Last author: #{last_author}
+  #      Journal: #{journal}"
         
-  fetcher.get(pubmedid)
+  ok = fetcher.get(pubmedid)
+  results[ok] ||= 0
+  results[ok] += 1
+
+  if ok
+    puts "OK"
+  else
+    puts "FAILED"
+  end
   
 end
+puts results.inspect
